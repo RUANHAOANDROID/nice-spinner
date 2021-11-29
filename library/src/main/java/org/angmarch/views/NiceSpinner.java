@@ -2,21 +2,11 @@ package org.angmarch.views;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.support.annotation.ColorRes;
-import android.support.annotation.DrawableRes;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v4.view.animation.LinearOutSlowInInterpolator;
-import android.support.v7.widget.AppCompatTextView;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -24,31 +14,24 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListAdapter;
-import android.widget.PopupWindow;
-
-
 import android.widget.ListPopupWindow;
 import android.widget.ListView;
 
-import java.util.ArrayList;
+import androidx.annotation.ColorRes;
+import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatTextView;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.interpolator.view.animation.LinearOutSlowInInterpolator;
+
 import java.util.Arrays;
 import java.util.List;
 
 
-/*
- * Copyright (C) 2015 Angelo Marchesin.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/**
+ * 自定义下拉框
  */
 public class NiceSpinner extends AppCompatTextView {
 
@@ -137,57 +120,48 @@ public class NiceSpinner extends AppCompatTextView {
     }
 
     private void init(Context context, AttributeSet attrs) {
-        Resources resources = getResources();
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.NiceSpinner);
-        int defaultPadding = resources.getDimensionPixelSize(R.dimen.one_and_a_half_grid_unit);
 
         setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
-        setPadding(resources.getDimensionPixelSize(R.dimen.three_grid_unit), defaultPadding, defaultPadding,
-                defaultPadding);
+
         setClickable(true);
         backgroundSelector = typedArray.getResourceId(R.styleable.NiceSpinner_backgroundSelector, R.drawable.selector);
         setBackgroundResource(backgroundSelector);
         textColor = typedArray.getColor(R.styleable.NiceSpinner_textTint, getDefaultTextColor(context));
         setTextColor(textColor);
         popupWindow = new ListPopupWindow(context);
-        popupWindow.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // The selected item is not displayed within the list, so when the selected position is equal to
-                // the one of the currently selected item it gets shifted to the next item.
-                if (position >= selectedIndex && position < adapter.getCount()) {
-                    position++;
-                }
-                selectedIndex = position;
-
-                if (onSpinnerItemSelectedListener != null) {
-                    onSpinnerItemSelectedListener.onItemSelected(NiceSpinner.this, view, position, id);
-                }
-
-                if (onItemClickListener != null) {
-                    onItemClickListener.onItemClick(parent, view, position, id);
-                }
-
-                if (onItemSelectedListener != null) {
-                    onItemSelectedListener.onItemSelected(parent, view, position, id);
-                }
-
-                adapter.setSelectedIndex(position);
-
-                setTextInternal(adapter.getItemInDataset(position));
-
-                dismissDropDown();
+        popupWindow.setOnItemClickListener((parent, view, position, id) -> {
+            // The selected item is not displayed within the list, so when the selected position is equal to
+            // the one of the currently selected item it gets shifted to the next item.
+            if (position >= selectedIndex && position < adapter.getCount()) {
+                position++;
             }
+            selectedIndex = position;
+
+            if (onSpinnerItemSelectedListener != null) {
+                onSpinnerItemSelectedListener.onItemSelected(NiceSpinner.this, view, position, id);
+            }
+
+            if (onItemClickListener != null) {
+                onItemClickListener.onItemClick(parent, view, position, id);
+            }
+
+            if (onItemSelectedListener != null) {
+                onItemSelectedListener.onItemSelected(parent, view, position, id);
+            }
+
+            adapter.setSelectedIndex(position);
+
+            setTextInternal(adapter.getItemInDataset(position));
+
+            dismissDropDown();
         });
 
         popupWindow.setModal(true);
 
-        popupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
-            @Override
-            public void onDismiss() {
-                if (!isArrowHidden) {
-                    animateArrow(false);
-                }
+        popupWindow.setOnDismissListener(() -> {
+            if (!isArrowHidden) {
+                animateArrow(false);
             }
         });
 
@@ -235,9 +209,9 @@ public class NiceSpinner extends AppCompatTextView {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
-            onVisibilityChanged(this, getVisibility());
-        }
+//        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
+//            onVisibilityChanged(this, getVisibility());
+//        }
     }
 
     @Override
@@ -318,9 +292,15 @@ public class NiceSpinner extends AppCompatTextView {
     public void setSelectedIndex(int position) {
         if (adapter != null) {
             if (position >= 0 && position <= adapter.getCount()) {
+
+
                 adapter.setSelectedIndex(position);
                 selectedIndex = position;
-                setTextInternal(selectedTextFormatter.format(adapter.getItemInDataset(position)).toString());
+                setTextInternal(adapter.getItemInDataset(position));
+
+                if (onSpinnerItemSelectedListener != null) {
+                    onSpinnerItemSelectedListener.onItemSelected(this, null, position, adapter.getItemId(position));
+                }
             } else {
                 throw new IllegalArgumentException("Position must be lower than adapter count!");
             }
@@ -361,7 +341,7 @@ public class NiceSpinner extends AppCompatTextView {
     }
 
     private <T> void setAdapterInternal(NiceSpinnerBaseAdapter<T> adapter) {
-        if (adapter.getCount() >= 0) {
+        if (adapter.getCount() > 0) {
             // If the adapter needs to be set again, ensure to reset the selected index as well
             selectedIndex = 0;
             popupWindow.setAdapter(adapter);
@@ -372,7 +352,7 @@ public class NiceSpinner extends AppCompatTextView {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (isEnabled() && event.getAction() == MotionEvent.ACTION_UP) {
-            if (!popupWindow.isShowing() && adapter.getCount() > 0) {
+            if (!popupWindow.isShowing()) {
                 showDropDown();
             } else {
                 dismissDropDown();
